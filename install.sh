@@ -25,6 +25,11 @@ G_SKIP="[-]"
 SUDO_USES=0
 PERFORMED=()
 
+# Test seam: BATS unit tests override this to inject a mock or disable sudo
+# entirely. Real runs use the default. Underscore + project prefix marks it
+# as internal — do not set this in normal usage.
+: "${_SUN_SUDO=sudo}"
+
 # ─── Output helpers ──────────────────────────────────────────────────────────
 
 log()  { echo "$*" >&2; }
@@ -50,7 +55,7 @@ sudo_run() {
   echo "  [sudo] $reason"
   echo "  [sudo]   \$ sudo $*"
   sudo_confirm
-  sudo "$@"
+  $_SUN_SUDO "$@"
   SUDO_USES=$(( SUDO_USES + 1 ))
 }
 
@@ -69,9 +74,9 @@ sudo_write() {
   # /etc/synthetic.conf (whose parser requires newline-terminated lines)
   # don't end up truncated.
   if [[ "$mode" == ">>" ]]; then
-    printf '%s\n' "$content" | sudo tee -a "$path" >/dev/null
+    printf '%s\n' "$content" | $_SUN_SUDO tee -a "$path" >/dev/null
   else
-    printf '%s\n' "$content" | sudo tee "$path" >/dev/null
+    printf '%s\n' "$content" | $_SUN_SUDO tee "$path" >/dev/null
   fi
   SUDO_USES=$(( SUDO_USES + 1 ))
 }
@@ -116,7 +121,7 @@ resolve_nix_version() {
 # These predicates are pure: they only inspect the system. They drive both
 # the resumability logic and the status banner — one source of truth.
 
-phase1_done()     { [[ -f /etc/synthetic.conf ]] && grep -qE '^nix([[:space:]]|$)' /etc/synthetic.conf; }
+phase1_done()     { local f="${1:-/etc/synthetic.conf}"; [[ -f "$f" ]] && grep -qE '^nix([[:space:]]|$)' "$f"; }
 nix_dir_present() { [[ -d /nix ]]; }
 phase2_done()     { diskutil info "Nix Store" >/dev/null 2>&1 && mount | grep -qE ' /nix '; }
 phase3_done()     { [[ -x "$HOME/.nix-profile/bin/nix" ]]; }
