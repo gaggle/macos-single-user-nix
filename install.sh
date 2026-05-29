@@ -65,10 +65,13 @@ sudo_write() {
   printf '%s' "$content" | sed "s#^#  [sudo]   │ #"
   echo "  [sudo]   ─── end ───"
   sudo_confirm
+  # `$(cat)` strips trailing newlines; restore one so files like
+  # /etc/synthetic.conf (whose parser requires newline-terminated lines)
+  # don't end up truncated.
   if [[ "$mode" == ">>" ]]; then
-    printf '%s' "$content" | sudo tee -a "$path" >/dev/null
+    printf '%s\n' "$content" | sudo tee -a "$path" >/dev/null
   else
-    printf '%s' "$content" | sudo tee "$path" >/dev/null
+    printf '%s\n' "$content" | sudo tee "$path" >/dev/null
   fi
   SUDO_USES=$(( SUDO_USES + 1 ))
 }
