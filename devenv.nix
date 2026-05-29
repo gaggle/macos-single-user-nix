@@ -15,6 +15,7 @@
 
   enterShell = ''
     echo "macos-single-user-nix devshell"
+    echo "  commands: lint, test-unit, test-vm"
   '';
 
   # Lint the installer on every devenv invocation.
@@ -27,6 +28,10 @@
 
   scripts.test-unit.exec = ''
     bats test/unit/
+  '';
+
+  scripts.test-vm.exec = ''
+    exec "$DEVENV_ROOT/test/bin/nix-test-vm" "$@"
   '';
 
   enterTest = ''

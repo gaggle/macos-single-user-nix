@@ -14,8 +14,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/../../lib/vm.sh"
 : "${IP:?IP not set}"
 
 log "asserting: install.sh refuses to enter phase 2 when /nix is absent"
-# vm_ssh_tty required for install.sh's `sudo -S -v` warm-up; see PLAN.md OQ#1.
-out=$(vm_ssh_tty "$IP" "echo '$VM_PASS' | sudo -S -v && ~/install.sh < /dev/null 2>&1" 2>&1 | tr -d '\r' || true)
+# NOPASSWD is baked into the paved VM, so install.sh's sudo_warmup
+# short-circuits on `sudo -n true` — no TTY needed, plain vm_ssh is fine.
+out=$(vm_ssh "$IP" "~/install.sh < /dev/null 2>&1" 2>&1 | tr -d '\r' || true)
 echo "$out" | grep -qE "does not exist|reboot" \
   || die "expected reboot/nix-missing error from installer, got:
 $out"

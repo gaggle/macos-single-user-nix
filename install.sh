@@ -50,6 +50,23 @@ sudo_confirm() {
   echo ""
 }
 
+# Predicates split out so BATS tests can override them.
+_sudo_passwordless()    { $_SUN_SUDO -n true 2>/dev/null; }
+_have_controlling_tty() { true </dev/tty 2>/dev/null; }
+
+# Ensure sudo will work for the rest of the run, or fail loudly now.
+#   1. NOPASSWD already covers us (test VMs, CI) → done, no prompt needed.
+#   2. We have /dev/tty → sudo can prompt. Warm the credential cache.
+#   3. Neither → fail. sudo would otherwise hang or fail cryptically halfway
+#      through. This is the curl|bash-under-nohup / ssh-without-pty case.
+sudo_warmup() {
+  _sudo_passwordless && return 0
+  _have_controlling_tty || die "sudo needs a password but there is no controlling terminal.
+       Re-run from an interactive shell, or configure passwordless sudo
+       for this user (NOPASSWD in /etc/sudoers.d/)."
+  $_SUN_SUDO -v
+}
+
 sudo_run() {
   local reason="$1"; shift
   echo "  [sudo] $reason"
@@ -527,7 +544,7 @@ main() {
 
   print_sudo_prompt
   echo ""
-  sudo -v
+  sudo_warmup
 
   do_phase1   # may exit 0 with a reboot notice
   do_phase2

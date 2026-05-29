@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Playbook: happy-path install on the VM's default shell (zsh).
-# Sourced by bin/nix-test-vm with IP, VM_NAME, etc. exported.
 set -euo pipefail
 
 scenario install/upload.sh
