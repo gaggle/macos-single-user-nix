@@ -264,9 +264,32 @@ write_fstab_entry() {
     | sudo_write "record Nix Store in /etc/fstab (noauto: LaunchDaemon will mount it)" /etc/fstab '>>'
 }
 
+# Where the named mount helper lives. It CANNOT live in the user's home or in
+# /nix (both user-writable in single-user mode): a root LaunchDaemon that execs
+# a user-writable script is a local privilege-escalation hole. /usr/local/libexec
+# is root-owned on Apple Silicon and created root-owned here if missing.
+NIX_STORE_MOUNTER=/usr/local/libexec/mount-nix-store
+
 install_launchdaemon() {
   local uuid="$1"
   local tmp
+
+  # 1. Giving the daemon a real named executable in the plist is what
+  #    makes System Settings > Login Items show a legible "mount-nix-store"
+  #    instead of a bare, anonymous "sh".
+  sudo_run "create $(dirname "$NIX_STORE_MOUNTER") for the Nix mount helper" \
+    mkdir -p "$(dirname "$NIX_STORE_MOUNTER")"
+  sudo_write "install named Nix Store mount helper (legible Login Items name)" "$NIX_STORE_MOUNTER" '>' <<EOF
+#!/bin/sh
+# Mounts the "Nix Store" APFS volume at /nix. Installed by macos-single-user-nix.
+/bin/wait4path /nix && /usr/sbin/diskutil mount $uuid
+EOF
+  sudo_run "set mount helper ownership to root:wheel" \
+    chown root:wheel "$NIX_STORE_MOUNTER"
+  sudo_run "make mount helper executable (0755)" \
+    chmod 755 "$NIX_STORE_MOUNTER"
+
+  # 2. LaunchDaemon plist that points at the named helper.
   tmp=$(mktemp)
   cat > "$tmp" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -279,9 +302,7 @@ install_launchdaemon() {
   <true/>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/sh</string>
-    <string>-c</string>
-    <string>/bin/wait4path /nix &amp;&amp; /usr/sbin/diskutil mount $uuid</string>
+    <string>$NIX_STORE_MOUNTER</string>
   </array>
   <key>StandardOutPath</key>
   <string>/var/log/org.nixos.darwin-store.log</string>
