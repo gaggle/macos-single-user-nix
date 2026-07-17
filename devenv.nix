@@ -35,6 +35,7 @@
   '';
 
   enterTest = ''
-    bash test/run-vm-test.sh "$@"
+    test-unit
+    lint
   '';
 }
