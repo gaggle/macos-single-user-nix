@@ -7,6 +7,8 @@
 # (with two extra sudo unmount + kickstart calls) — moved here where it belongs.
 set -euo pipefail
 
+scenario verify/guest-version.sh
+
 scenario install/upload.sh
 scenario install/phase1.sh
 IP=$(scenario install/reboot.sh)

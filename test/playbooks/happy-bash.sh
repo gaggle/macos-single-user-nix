@@ -3,6 +3,8 @@
 # Sourced by bin/nix-test-vm with IP, VM_NAME, etc. exported.
 set -euo pipefail
 
+scenario verify/guest-version.sh
+
 scenario setup/switch-to-bash.sh
 
 scenario install/upload.sh

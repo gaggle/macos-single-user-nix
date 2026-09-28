@@ -7,6 +7,8 @@
 # resumable.
 set -euo pipefail
 
+scenario verify/guest-version.sh
+
 scenario install/upload.sh
 scenario install/phase1.sh
 IP=$(scenario install/reboot.sh)

@@ -25,8 +25,8 @@ TEST_DIR="$(cd "$HERE/.." && pwd)"
 # shellcheck disable=SC1091
 source "$TEST_DIR/lib/vm.sh"
 
-BASE_IMAGE="${BASE_IMAGE:-ghcr.io/cirruslabs/macos-sequoia-vanilla:latest}"
-PAVED_NAME="${PAVED_NAME:-mssun-paved}"
+BASE_IMAGE="${BASE_IMAGE:-ghcr.io/cirruslabs/macos-tahoe-vanilla:26.6.2}"
+PAVED_NAME="${PAVED_NAME:-mssun-paved-tahoe}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/mssun-vm-key}"
 
 usage() {
