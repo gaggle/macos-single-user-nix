@@ -7,6 +7,7 @@
     curl
     shellcheck
     sshpass
+    expect
     (bats.withLibraries (p: [ p.bats-assert p.bats-support ]))
     # tart is macOS-only; the package is in nixpkgs but only builds on darwin.
   ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [

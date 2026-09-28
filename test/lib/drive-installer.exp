@@ -1,0 +1,137 @@
+#!/usr/bin/env expect
+# Drives one invocation of install.sh through a real terminal in the guest
+# (ssh -tt), the way a person meets it: the account's password is typed at
+# sudo's own prompt, and Enter is pressed at every sudo pause.
+#
+# Nothing is sent on a timer. Enter is sent only when a
+# "[sudo]   $ sudo ..." line has been printed and the pause text then appears
+# exactly. The password is sent only at sudo's "Password:" prompt.
+#
+# usage: expect -f drive-installer.exp -- <ip> <expected-exit> <transcript> <results> <ssh-opt>...
+# env:   VM_USER, VM_PASS, SSH_KEY
+#
+# Checks, per invocation:
+#   - the guest gave the installer a terminal, and holds no sudo timestamp
+#   - pauses answered == "[sudo]   $ sudo" lines printed
+#   - both equal the count the installer reports, when it reaches its summary
+#   - the password was asked for exactly once
+#   - the installer exited with <expected-exit>
+# Each prompt is waited for at most 60 seconds; on a timeout or a failed check
+# the last screen is printed and the exit status is 1.
+
+set ip            [lindex $argv 0]
+set expected_exit [lindex $argv 1]
+set transcript_f  [lindex $argv 2]
+set results_f     [lindex $argv 3]
+set ssh_opts      [lrange $argv 4 end]
+
+set user $env(VM_USER)
+set pass $env(VM_PASS)
+set key  $env(SSH_KEY)
+
+set pause_text {  [sudo] Press Enter to run, or Ctrl-C to abort...}
+set sudo_prefix {  [sudo]   $ sudo }
+
+set timeout 60
+set transcript ""
+set sudo_lines 0
+set pauses 0
+set password_prompts 0
+set reported -1
+set awaiting_pause 0
+set terminal ""
+set last_command ""
+
+# The remote command runs in the terminal ssh allocates. `sudo -k` drops any
+# timestamp; the driver refuses to start if sudo still works without a password.
+set remote {sudo -k; if sudo -n true 2>/dev/null; then echo TIMESTAMP:valid; exit 97; fi; if [ -t 0 ]; then echo TERMINAL:yes; else echo TERMINAL:no; fi; ~/install.sh}
+
+proc screen {} {
+  global transcript
+  set lines [split $transcript "\n"]
+  set n [llength $lines]
+  set from [expr {$n > 30 ? $n - 30 : 0}]
+  return [join [lrange $lines $from end] "\n"]
+}
+
+proc fail {reason} {
+  global transcript transcript_f results_f
+  set fh [open $transcript_f a]; puts $fh $transcript; close $fh
+  send_user "\n\[driver\] FAIL: $reason\n"
+  send_user "\[driver\] last screen:\n[screen]\n"
+  set fh [open $results_f a]; puts $fh "fail: $reason"; close $fh
+  catch {exec kill [exp_pid]}
+  exit 1
+}
+
+proc line_seen {line} {
+  global sudo_lines awaiting_pause reported terminal sudo_prefix last_command
+  if {[string first $sudo_prefix $line] == 0} {
+    if {$awaiting_pause} {
+      fail "\"$last_command\" ran with no pause after it was printed"
+    }
+    incr sudo_lines
+    set awaiting_pause 1
+    set last_command $line
+  } elseif {[regexp {Privileged operations: ([0-9]+) sudo call\(s\) executed\.} $line -> n]} {
+    set reported $n
+  } elseif {[string match "TERMINAL:*" $line]} {
+    set terminal [string range $line 9 end]
+  } elseif {$line eq "TIMESTAMP:valid"} {
+    fail "sudo still worked without a password after sudo -k"
+  } elseif {[string match "*Sorry, try again*" $line]} {
+    fail "sudo rejected the password"
+  }
+}
+
+spawn ssh -tt -i $key -o IdentitiesOnly=yes {*}$ssh_opts $user@$ip $remote
+
+expect {
+  -re {([^\r\n]*)\r*\n} {
+    append transcript $expect_out(0,string)
+    line_seen $expect_out(1,string)
+    exp_continue
+  }
+  -re {  \[sudo\] Press Enter to run, or Ctrl-C to abort\.\.\.$} {
+    append transcript $expect_out(0,string)
+    if {!$awaiting_pause} {
+      fail "a pause appeared with no \"\[sudo\]   \$ sudo\" line before it"
+    }
+    set awaiting_pause 0
+    incr pauses
+    send "\r"
+    exp_continue
+  }
+  -re {Password: ?$} {
+    append transcript $expect_out(0,string)
+    incr password_prompts
+    send "$pass\r"
+    exp_continue
+  }
+  timeout {
+    append transcript $expect_out(buffer)
+    fail "no expected output for 60 seconds"
+  }
+  eof {
+    append transcript $expect_out(buffer)
+  }
+}
+
+set status [wait]
+set exit_code [lindex $status 3]
+
+set summary "sudo_lines=$sudo_lines pauses=$pauses reported=[expr {$reported < 0 ? "none" : $reported}] password_prompts=$password_prompts exit=$exit_code terminal=$terminal"
+send_user "\n\[driver\] $summary\n"
+
+if {$terminal ne "yes"}                 { fail "the guest gave the installer no terminal" }
+if {$awaiting_pause}                    { fail "\"$last_command\" ended with no pause after it" }
+if {$pauses != $sudo_lines}             { fail "pauses answered ($pauses) != sudo lines printed ($sudo_lines)" }
+if {$reported >= 0 && $reported != $sudo_lines} {
+  fail "the installer reports $reported sudo calls but printed $sudo_lines sudo lines"
+}
+if {$password_prompts != 1}             { fail "the password was asked for $password_prompts times, expected once" }
+if {$exit_code != $expected_exit}       { fail "installer exited $exit_code, expected $expected_exit" }
+
+set fh [open $transcript_f a]; puts $fh $transcript; close $fh
+set fh [open $results_f a]; puts $fh $summary; close $fh
+exit 0

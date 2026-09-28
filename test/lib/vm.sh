@@ -171,5 +171,29 @@ vm_reboot() {
   log "rebooting $name"
   vm_sudo "$ip" reboot || true
   sleep 10
-  vm_wait_ssh "$name" 240
+  vm_wait_ssh "$name" 300
+}
+
+# terminal_mode
+# True when the playbook runs the installer through a terminal, typing the
+# account's password at sudo's prompt (nix-test-vm playbook <name> --terminal).
+terminal_mode() {
+  [[ "${INSTALL_MODE:-}" == "terminal" ]]
+}
+
+# drive_installer <ip> [expected-exit]
+# Runs ~/install.sh in a terminal inside the guest via test/lib/drive-installer.exp,
+# which answers only what it has matched and checks the sudo counts. Appends
+# the invocation's counts to $TERMINAL_RUN_DIR/results and its screen output to
+# $TERMINAL_RUN_DIR/transcript.
+drive_installer() {
+  local ip="$1" expected_exit="${2:-0}"
+  : "${TERMINAL_RUN_DIR:?TERMINAL_RUN_DIR not set}"
+  [[ -n "$SSH_KEY" ]] || die "terminal mode needs SSH_KEY"
+  command -v expect >/dev/null || die "expect not on PATH — run inside devenv shell"
+  : > "$TERMINAL_RUN_DIR/transcript"
+  VM_USER="$VM_USER" VM_PASS="$VM_PASS" SSH_KEY="$SSH_KEY" \
+    expect -f "$(repo_root)/test/lib/drive-installer.exp" -- \
+      "$ip" "$expected_exit" "$TERMINAL_RUN_DIR/transcript" "$TERMINAL_RUN_DIR/results" \
+      "${SSH_OPTS[@]}"
 }

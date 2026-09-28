@@ -4,7 +4,10 @@
 # Subcommands:
 #   pull-base                Pull the vanilla Cirrus base image (~25 GB, one-time).
 #   pave                     Clone base → 'mssun-paved', boot, install SSH key + sudoers, snapshot.
-#   playbook <name>          Run a playbook from test/playbooks/<name>.sh against a fresh clone.
+#   playbook <name> [--terminal]
+#                            Run a playbook from test/playbooks/<name>.sh against a fresh clone.
+#                            --terminal takes passwordless sudo away from the clone and runs
+#                            the installer through a terminal, answering its prompts.
 #   ssh <vm-name>            sshpass into a running VM.
 #   list                     Show tart VMs whose names start with 'mssun-'.
 #   clean                    Stop + delete all 'mssun-test-*' VMs (leaves base + paved).
@@ -90,7 +93,16 @@ cmd_pave() {
 
 cmd_playbook() {
   local name="${1:-}"
-  [[ -n "$name" ]] || die "usage: nix-test-vm playbook <name>"
+  [[ -n "$name" ]] || die "usage: nix-test-vm playbook <name> [--terminal]"
+  shift
+  local terminal=0
+  while (( $# )); do
+    case "$1" in
+      --terminal) terminal=1 ;;
+      *) die "unknown playbook option: $1" ;;
+    esac
+    shift
+  done
   local playbook="$TEST_DIR/playbooks/$name.sh"
   [[ -f "$playbook" ]] || die "playbook not found: $playbook"
 
@@ -101,9 +113,15 @@ cmd_playbook() {
   export VM_NAME="mssun-test-${name}-$$"
   export PAVED_NAME SSH_KEY VM_USER VM_PASS BASE_IMAGE
   export TEST_DIR
+  if (( terminal )); then
+    INSTALL_MODE=terminal
+    TERMINAL_RUN_DIR="$(mktemp -d)"
+    export INSTALL_MODE TERMINAL_RUN_DIR
+  fi
 
   cleanup() {
     set +e
+    [[ -n "${WATCHDOG_PID:-}" ]] && kill "$WATCHDOG_PID" 2>/dev/null
     if [[ "${KEEP_VM:-0}" == "1" ]]; then
       log "KEEP_VM=1 — leaving $VM_NAME running. Inspect with:"
       log "  $0 ssh $VM_NAME"
@@ -123,8 +141,19 @@ cmd_playbook() {
   export IP
   log "VM up at $IP — running playbook"
 
+  if (( terminal )); then
+    # A terminal playbook gets one hour, then it is killed (which tears the VM down).
+    (sleep 3600 && { warn "playbook exceeded 1 hour"; kill -TERM $$; }) &
+    WATCHDOG_PID=$!
+    scenario setup/remove-passwordless-sudo.sh
+  fi
+
   # shellcheck disable=SC1090
   source "$playbook"
+
+  if (( terminal )); then
+    scenario verify/pauses-answered.sh
+  fi
 
   log "PASS — playbook '$name' completed"
 }
