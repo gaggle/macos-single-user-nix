@@ -7,7 +7,7 @@
 # "[sudo]   $ sudo ..." line has been printed and the pause text then appears
 # exactly. The password is sent only at sudo's "Password:" prompt.
 #
-# usage: expect -f drive-installer.exp -- <ip> <expected-exit> <transcript> <results> <sudo-commands> <ssh-opt>...
+# usage: expect -f drive-installer.exp -- <ip> <expected-exit> <expected-passwords> <transcript> <results> <sudo-commands> <ssh-opt>...
 # env:   VM_USER, VM_PASS, SSH_KEY
 #
 # <sudo-commands> gets one block per invocation: a "--" line, then each
@@ -17,17 +17,19 @@
 #   - the guest gave the installer a terminal, and holds no sudo timestamp
 #   - pauses answered == "[sudo]   $ sudo" lines printed
 #   - both equal the count the installer reports, when it reaches its summary
-#   - the password was asked for exactly once
+#   - the password was asked for <expected-passwords> times: once, or zero for
+#     an invocation the installer refuses before it reaches sudo
 #   - the installer exited with <expected-exit>
 # Each prompt is waited for at most 60 seconds; on a timeout or a failed check
 # the last screen is printed and the exit status is 1.
 
 set ip            [lindex $argv 0]
 set expected_exit [lindex $argv 1]
-set transcript_f  [lindex $argv 2]
-set results_f     [lindex $argv 3]
-set sudo_f         [lindex $argv 4]
-set ssh_opts      [lrange $argv 5 end]
+set expected_pw   [lindex $argv 2]
+set transcript_f  [lindex $argv 3]
+set results_f     [lindex $argv 4]
+set sudo_f        [lindex $argv 5]
+set ssh_opts      [lrange $argv 6 end]
 
 set user $env(VM_USER)
 set pass $env(VM_PASS)
@@ -147,7 +149,7 @@ if {$pauses != $sudo_lines}             { fail "pauses answered ($pauses) != sud
 if {$reported >= 0 && $reported != $sudo_lines} {
   fail "the installer reports $reported sudo calls but printed $sudo_lines sudo lines"
 }
-if {$password_prompts != 1}             { fail "the password was asked for $password_prompts times, expected once" }
+if {$password_prompts != $expected_pw}  { fail "the password was asked for $password_prompts times, expected $expected_pw" }
 if {$exit_code != $expected_exit}       { fail "installer exited $exit_code, expected $expected_exit" }
 
 save_sudo

@@ -159,21 +159,21 @@ vm_reboot() {
   vm_wait_ssh "$name" 300
 }
 
-# drive_installer <ip> [expected-exit]
+# drive_installer <ip> [expected-exit] [expected-passwords]
 # Runs ~/install.sh in a terminal inside the guest via test/lib/drive-installer.exp,
 # which answers only what it has matched and checks the sudo counts. Appends
 # the invocation's counts to $TERMINAL_RUN_DIR/results, its sudo commands to
 # $TERMINAL_RUN_DIR/sudo-commands and its screen output to
 # $TERMINAL_RUN_DIR/transcript.
 drive_installer() {
-  local ip="$1" expected_exit="${2:-0}"
+  local ip="$1" expected_exit="${2:-0}" expected_passwords="${3:-1}"
   : "${TERMINAL_RUN_DIR:?TERMINAL_RUN_DIR not set}"
   [[ -n "$SSH_KEY" ]] || die "the installer terminal needs SSH_KEY"
   command -v expect >/dev/null || die "expect not on PATH — run inside devenv shell"
   : > "$TERMINAL_RUN_DIR/transcript"
   VM_USER="$VM_USER" VM_PASS="$VM_PASS" SSH_KEY="$SSH_KEY" \
     expect -f "$(repo_root)/test/lib/drive-installer.exp" -- \
-      "$ip" "$expected_exit" "$TERMINAL_RUN_DIR/transcript" "$TERMINAL_RUN_DIR/results" \
+      "$ip" "$expected_exit" "$expected_passwords" "$TERMINAL_RUN_DIR/transcript" "$TERMINAL_RUN_DIR/results" \
       "$TERMINAL_RUN_DIR/sudo-commands" \
       "${SSH_OPTS[@]}"
 }

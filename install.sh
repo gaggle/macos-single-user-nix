@@ -335,15 +335,21 @@ EOF
     launchctl load -w /Library/LaunchDaemons/org.nixos.darwin-store.plist || true
 }
 
+# Phase 2 needs /nix, which macOS creates at boot once synthetic.conf declares
+# it. Called before the password is asked, so a skipped reboot is reported first.
+refuse_phase2_without_nix_dir() {
+  nix_dir_present || die "/nix does not exist even though synthetic.conf declares it.
+       Did you reboot since editing /etc/synthetic.conf? If so, check:
+         cat /etc/synthetic.conf
+       and reboot once more."
+}
+
 do_phase2() {
   if phase2_done; then
     log "$G_SKIP Phase 2/3: APFS volume already created and mounted — skipping"
     return
   fi
-  nix_dir_present || die "/nix does not exist even though synthetic.conf declares it.
-       Did you reboot since editing /etc/synthetic.conf? If so, check:
-         cat /etc/synthetic.conf
-       and reboot once more."
+  refuse_phase2_without_nix_dir
 
   echo ""
   log "$G_NOW Phase 2/3: creating APFS Nix Store volume + LaunchDaemon"
@@ -574,6 +580,10 @@ main() {
     echo "All phases already complete — nothing to do."
     echo "Open a new shell and try: nix --version"
     return 0
+  fi
+
+  if phase1_done && ! phase2_done; then
+    refuse_phase2_without_nix_dir
   fi
 
   print_sudo_prompt

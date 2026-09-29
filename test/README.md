@@ -70,7 +70,7 @@ For every invocation it checks that:
 - pauses answered equals `[sudo]   $ sudo` lines printed;
 - both equal the count the installer reports, when it reaches its summary (an
   invocation that exits early reports none, which is not a failure);
-- the password was asked for exactly once;
+- the password was asked for exactly once, or not at all when the installer refuses to start phase 2 because `/nix` is missing, which it reports before it asks;
 - the installer exited as the playbook expects.
 
 Every playbook also fails if the guest's `sw_vers -productVersion` does not

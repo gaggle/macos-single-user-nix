@@ -3,8 +3,8 @@
 # no reboot) refuses to start phase 2 with a clear error rather than silently
 # making a mess.
 #
-# Drives the predicate: install.sh phase 2's first check is `nix_dir_present`
-# which dies with "did you reboot since editing /etc/synthetic.conf?"
+# Drives the predicate: install.sh refuses phase 2 when `nix_dir_present` is
+# false, before `sudo -v`, with "did you reboot since editing /etc/synthetic.conf?"
 #
 # Requires: $IP, $TERMINAL_RUN_DIR.
 set -euo pipefail
@@ -14,9 +14,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/../../lib/vm.sh"
 : "${IP:?IP not set}"
 
 log "asserting: install.sh refuses to enter phase 2 when /nix is absent"
-# The installer must exit 1 in the terminal, still after answering the
-# password prompt once.
-drive_installer "$IP" 1
+# The installer must exit 1 in the terminal, and say so before it asks for the
+# password: zero password prompts.
+drive_installer "$IP" 1 0
 out=$(tr -d '\r' < "$TERMINAL_RUN_DIR/transcript")
 echo "$out" | grep -qE "does not exist|reboot" \
   || die "expected reboot/nix-missing error from installer, got:
