@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
-# Builds REPORT.md from runs.jsonl and the terminal output the suite saved under
-# test/output/<commit>/<playbook>.txt.
+# Builds REPORT.md from test/runs.jsonl and the terminal output the suite saved
+# under test/output/<commit>/<playbook>.txt, and writes the README badge.
 #
 # One table row per macOS and Nix combination, showing that combination's
-# newest run (the last line in runs.jsonl), pass or fail, sorted by macOS then
+# newest run (the last line in test/runs.jsonl), pass or fail, sorted by macOS then
 # Nix, highest first. Under the table, each row's run gets one collapsed
 # section per playbook holding its raw terminal output.
 #
-# Env knobs (for tests): RUNS_FILE, OUTPUT_DIR, REPORT_FILE.
+# The README badge is the line starting "[![tested on". It names the macOS and
+# Nix versions of the newest passing line of test/runs.jsonl, or says no run has
+# passed.
+#
+# Env knobs (for tests): RUNS_FILE, OUTPUT_DIR, REPORT_FILE, README_FILE.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-RUNS_FILE="${RUNS_FILE:-$ROOT/runs.jsonl}"
+RUNS_FILE="${RUNS_FILE:-$ROOT/test/runs.jsonl}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT/test/output}"
 REPORT_FILE="${REPORT_FILE:-$ROOT/REPORT.md}"
+README_FILE="${README_FILE:-$ROOT/README.md}"
 
 # field <json-line> <name>: a top-level string field of a flat JSON object.
 field() {
@@ -71,7 +76,7 @@ rows=$(
   done <<< "$rows"
   echo
   echo "To reproduce a run, see [test/README.md](test/README.md)."
-  echo "[\`runs.jsonl\`](runs.jsonl) is the source of the table; \`test/bin/build-report\` builds this page."
+  echo "[\`test/runs.jsonl\`](test/runs.jsonl) is the source of the table; \`test/bin/build-report\` builds this page."
   echo
   echo "## Terminal output"
   while IFS= read -r line; do
@@ -101,3 +106,26 @@ rows=$(
     fi
   done <<< "$rows"
 } > "$REPORT_FILE"
+
+# The badge: the newest passing line, or a grey badge when none has passed.
+# shields.io reads "-" as a separator and "--" as a literal dash.
+badge_text() { sed 's/-/--/g; s/ /%20/g' <<< "$1"; }
+newest_pass=""
+while IFS= read -r line; do
+  [[ "$(field "$line" result)" == pass ]] && newest_pass="$line"
+done < "$RUNS_FILE"
+if [[ -n "$newest_pass" ]]; then
+  value="macOS $(field "$newest_pass" macos), Nix $(field "$newest_pass" nix)"
+  color=brightgreen
+else
+  value="no passing run"
+  color=lightgrey
+fi
+badge="[![tested on $value](https://img.shields.io/badge/tested%20on-$(badge_text "$value")-$color)](REPORT.md)"
+if [[ -f "$README_FILE" ]] && grep -q '^\[!\[tested on' "$README_FILE"; then
+  tmp="$README_FILE.tmp"
+  while IFS= read -r l || [[ -n "$l" ]]; do
+    if [[ "$l" == "[![tested on"* ]]; then printf '%s\n' "$badge"; else printf '%s\n' "$l"; fi
+  done < "$README_FILE" > "$tmp"
+  mv "$tmp" "$README_FILE"
+fi

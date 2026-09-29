@@ -10,6 +10,6 @@ One row per macOS and Nix combination, showing its newest run, whether it passed
 |---|---|---|---|---|
 
 To reproduce a run, see [test/README.md](test/README.md).
-[`runs.jsonl`](runs.jsonl) is the source of the table; `test/bin/build-report` builds this page.
+[`test/runs.jsonl`](test/runs.jsonl) is the source of the table; `test/bin/build-report` builds this page.
 
 ## Terminal output

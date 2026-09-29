@@ -86,8 +86,8 @@ screen. A reboot fails after 5 minutes and a playbook after 1 hour.
 
 The suite saves each playbook's terminal output to
 `test/output/<commit>/<playbook>.txt`, under the commit checked out (the working
-tree must be clean). After a run, append a line to [`runs.jsonl`](../runs.jsonl)
-and rebuild [`REPORT.md`](../REPORT.md):
+tree must be clean). After a run, append a line to [`runs.jsonl`](runs.jsonl)
+and rebuild [`REPORT.md`](../REPORT.md) and the badge at the top of the README:
 
 ```sh
 test/bin/build-report
