@@ -42,11 +42,22 @@ die()  { echo "ERROR: $*" >&2; exit 1; }
 # The user can audit every privileged action in their terminal scrollback —
 # no hidden chains, no opaque mutations.
 
+# Whether the installer was started from a terminal, decided once here. It
+# cannot be asked later: sudo_write reads its content from a pipe, so stdin is
+# no longer the terminal by the time it pauses. BATS tests override it.
+if [[ -z "${_SUN_INTERACTIVE:-}" ]]; then
+  if [[ -t 0 ]]; then _SUN_INTERACTIVE=1; else _SUN_INTERACTIVE=0; fi
+fi
+
+# Test seam: where the pause reads Enter from.
+: "${_SUN_TTY=/dev/tty}"
+
 sudo_confirm() {
   # Pause so the user can read the upcoming sudo call and abort if unexpected.
   # Skipped in non-interactive contexts (piped input, CI, SSH without -t).
-  [[ -t 0 ]] || return 0
-  read -r -s -p "  [sudo] Press Enter to run, or Ctrl-C to abort..." < /dev/tty
+  [[ "$_SUN_INTERACTIVE" == 1 ]] || return 0
+  printf '%s' "  [sudo] Press Enter to run, or Ctrl-C to abort..." >&2
+  read -r -s < "$_SUN_TTY"
   echo ""
 }
 
