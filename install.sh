@@ -538,8 +538,8 @@ verify() {
   log "verification:"
   log "  nix --version: $(nix --version)"
   log "  /nix mount:    $(mount | grep -E ' /nix ' || echo MISSING)"
-  log "  pinging public binary cache:"
-  nix store ping --store https://cache.nixos.org
+  log "  querying public binary cache:"
+  nix store info --store https://cache.nixos.org
 }
 
 print_summary() {

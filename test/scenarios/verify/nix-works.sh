@@ -15,5 +15,5 @@ nix_ver=$(vm_ssh "$IP" "$shell_name -l -c 'nix --version'") \
 log "  → $nix_ver"
 
 log "asserting: nix can reach the public binary cache"
-vm_ssh "$IP" "$shell_name -l -c 'nix store ping --store https://cache.nixos.org'" \
-  || die "nix store ping failed"
+vm_ssh "$IP" "$shell_name -l -c 'nix store info --store https://cache.nixos.org'" \
+  || die "nix store info failed"
