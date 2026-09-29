@@ -13,5 +13,5 @@ if terminal_mode; then
 else
   # NOPASSWD is baked into the paved VM, so install.sh's sudo_warmup
   # short-circuits on `sudo -n true` — no TTY needed, plain vm_ssh is fine.
-  vm_ssh "$IP" "~/install.sh < /dev/null"
+  vm_ssh "$IP" "\$HOME/install.sh < /dev/null"
 fi

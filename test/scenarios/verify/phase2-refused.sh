@@ -22,7 +22,7 @@ if terminal_mode; then
 else
   # NOPASSWD is baked into the paved VM, so install.sh's sudo_warmup
   # short-circuits on `sudo -n true` — no TTY needed, plain vm_ssh is fine.
-  out=$(vm_ssh "$IP" "~/install.sh < /dev/null 2>&1" 2>&1 | tr -d '\r' || true)
+  out=$(vm_ssh "$IP" "\$HOME/install.sh < /dev/null 2>&1" 2>&1 | tr -d '\r' || true)
 fi
 echo "$out" | grep -qE "does not exist|reboot" \
   || die "expected reboot/nix-missing error from installer, got:

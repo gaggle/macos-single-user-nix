@@ -16,7 +16,7 @@
 
   enterShell = ''
     echo "macos-single-user-nix devshell"
-    echo "  commands: lint, test-unit, test-vm"
+    echo "  commands: check, lint, test-unit, test-vm"
   '';
 
   # Lint the installer on every devenv invocation.
@@ -24,19 +24,27 @@
     find . -type f \( -name '*.sh' -o -path './test/bin/*' \) \
       -not -path './.devenv/*' -not -path './.git/*' \
       -not -path './test/unit/.bats_deps/*' \
-      -exec shellcheck {} +
+      -exec shellcheck -x -P SCRIPTDIR {} +
   '';
 
   scripts.test-unit.exec = ''
-    bats test/unit/
+    BATS_TEST_TIMEOUT=30 bats test/unit/
   '';
+
+  scripts.check = {
+    description = "Run the unit tests and lint";
+    exec = ''
+      set -e
+      test-unit
+      lint
+    '';
+  };
 
   scripts.test-vm.exec = ''
     exec "$DEVENV_ROOT/test/bin/nix-test-vm" "$@"
   '';
 
   enterTest = ''
-    test-unit
-    lint
+    check
   '';
 }
