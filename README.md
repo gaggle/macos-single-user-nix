@@ -1,5 +1,6 @@
 # macos-single-user-nix
 
+
 A single-shell-script installer for [Nix](https://nixos.org/) in **single-user
 mode** on macOS.
 

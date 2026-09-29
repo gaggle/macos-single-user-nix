@@ -25,6 +25,11 @@ Paving once means downstream test runs:
 - log in via key (no `sshpass`)
 - run `install.sh` non-interactively (passwordless sudo)
 
+Before a VM run, `devenv shell -- check` runs the unit tests and lint.
+`phase1-undone-fails-cleanly` wipes `/etc/synthetic.conf` after the reboot and
+asserts the installer redoes phase 1: it writes the entry again, prints the
+reboot notice, exits 0, and creates no volume.
+
 ## Prerequisites
 
 - macOS host with Apple Silicon

@@ -17,3 +17,6 @@ export IP
 
 scenario corrupt/delete-synthetic-conf.sh
 scenario verify/phase1-redone.sh
+# The second run starts over from a fresh state, so each run is checked alone.
+scenario verify/sudo-commands.sh prefix 1 1
+scenario verify/sudo-commands.sh prefix 2 2

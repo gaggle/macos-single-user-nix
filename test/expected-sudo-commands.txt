@@ -1,0 +1,13 @@
+sudo tee > /etc/synthetic.conf
+sudo chmod 644 /etc/synthetic.conf
+sudo diskutil apfs addVolume <container> Case-sensitive APFS Nix Store -mountpoint /nix
+sudo chown -R <user>:staff /nix
+sudo tee >> /etc/fstab
+sudo mkdir -p /usr/local/libexec
+sudo tee > /usr/local/libexec/mount-nix-store
+sudo chown root:wheel /usr/local/libexec/mount-nix-store
+sudo chmod 755 /usr/local/libexec/mount-nix-store
+sudo cp <tmp> /Library/LaunchDaemons/org.nixos.darwin-store.plist
+sudo chown root:wheel /Library/LaunchDaemons/org.nixos.darwin-store.plist
+sudo chmod 644 /Library/LaunchDaemons/org.nixos.darwin-store.plist
+sudo launchctl load -w /Library/LaunchDaemons/org.nixos.darwin-store.plist

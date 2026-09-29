@@ -7,8 +7,11 @@
 # "[sudo]   $ sudo ..." line has been printed and the pause text then appears
 # exactly. The password is sent only at sudo's "Password:" prompt.
 #
-# usage: expect -f drive-installer.exp -- <ip> <expected-exit> <transcript> <results> <ssh-opt>...
+# usage: expect -f drive-installer.exp -- <ip> <expected-exit> <transcript> <results> <sudo-commands> <ssh-opt>...
 # env:   VM_USER, VM_PASS, SSH_KEY
+#
+# <sudo-commands> gets one block per invocation: a "--" line, then each
+# "sudo ..." command line the installer printed, in order.
 #
 # Checks, per invocation:
 #   - the guest gave the installer a terminal, and holds no sudo timestamp
@@ -23,7 +26,8 @@ set ip            [lindex $argv 0]
 set expected_exit [lindex $argv 1]
 set transcript_f  [lindex $argv 2]
 set results_f     [lindex $argv 3]
-set ssh_opts      [lrange $argv 4 end]
+set sudo_f         [lindex $argv 4]
+set ssh_opts      [lrange $argv 5 end]
 
 set user $env(VM_USER)
 set pass $env(VM_PASS)
@@ -41,6 +45,7 @@ set reported -1
 set awaiting_pause 0
 set terminal ""
 set last_command ""
+set sudo_cmds {}
 
 # The remote command runs in the terminal ssh allocates. `sudo -k` drops any
 # timestamp; the driver refuses to start if sudo still works without a password.
@@ -54,8 +59,17 @@ proc screen {} {
   return [join [lrange $lines $from end] "\n"]
 }
 
+proc save_sudo {} {
+  global sudo_cmds sudo_f
+  set fh [open $sudo_f a]
+  puts $fh "--"
+  foreach c $sudo_cmds { puts $fh $c }
+  close $fh
+}
+
 proc fail {reason} {
   global transcript transcript_f results_f
+  save_sudo
   set fh [open $transcript_f a]; puts $fh $transcript; close $fh
   send_user "\n\[driver\] FAIL: $reason\n"
   send_user "\[driver\] last screen:\n[screen]\n"
@@ -65,12 +79,13 @@ proc fail {reason} {
 }
 
 proc line_seen {line} {
-  global sudo_lines awaiting_pause reported terminal sudo_prefix last_command
+  global sudo_lines awaiting_pause reported terminal sudo_prefix last_command sudo_cmds
   if {[string first $sudo_prefix $line] == 0} {
     if {$awaiting_pause} {
       fail "\"$last_command\" ran with no pause after it was printed"
     }
     incr sudo_lines
+    lappend sudo_cmds [string range $line 13 end]
     set awaiting_pause 1
     set last_command $line
   } elseif {[regexp {Privileged operations: ([0-9]+) sudo call\(s\) executed\.} $line -> n]} {
@@ -84,7 +99,10 @@ proc line_seen {line} {
   }
 }
 
+# The spawn line names the key path, so it stays out of the saved output.
+log_user 0
 spawn ssh -tt -i $key -o IdentitiesOnly=yes {*}$ssh_opts $user@$ip $remote
+log_user 1
 
 expect {
   -re {([^\r\n]*)\r*\n} {
@@ -132,6 +150,7 @@ if {$reported >= 0 && $reported != $sudo_lines} {
 if {$password_prompts != 1}             { fail "the password was asked for $password_prompts times, expected once" }
 if {$exit_code != $expected_exit}       { fail "installer exited $exit_code, expected $expected_exit" }
 
+save_sudo
 set fh [open $transcript_f a]; puts $fh $transcript; close $fh
 set fh [open $results_f a]; puts $fh $summary; close $fh
 exit 0

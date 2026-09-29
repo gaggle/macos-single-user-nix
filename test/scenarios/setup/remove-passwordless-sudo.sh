@@ -9,9 +9,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/../../lib/vm.sh"
 
 : "${IP:?IP not set}"
 
-log "removing passwordless sudo from this clone"
-# Two files grant it: ours (written by pave) and the base image's own.
-vm_sudo "$IP" "rm -f /etc/sudoers.d/mssun-test /etc/sudoers.d/admin-nopasswd"
+log "removing every passwordless sudoers entry from this clone"
+# Whichever file grants it (ours from pave, or the base image's own) goes.
+# shellcheck disable=SC2016  # the guest expands $f
+vm_sudo_sh "$IP" 'grep -lE "^[^#]*NOPASSWD" /etc/sudoers.d/* 2>/dev/null | while read -r f; do rm -f "$f"; done; true'
 # Prove it: with the timestamp dropped, sudo must want a password.
 if vm_ssh "$IP" "sudo -k; sudo -n true" 2>/dev/null; then
   die "sudo still works without a password in the clone"

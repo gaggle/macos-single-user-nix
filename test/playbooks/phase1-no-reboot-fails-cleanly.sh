@@ -10,3 +10,4 @@ scenario install/upload.sh
 scenario install/phase1.sh
 # Deliberately skip install/reboot.sh — /nix does not exist yet.
 scenario verify/phase2-refused.sh
+scenario verify/sudo-commands.sh prefix

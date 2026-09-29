@@ -53,21 +53,6 @@ vm_ssh() {
   _ssh_cmd "$VM_USER@$ip" "$@"
 }
 
-# vm_ssh_tty <ip> <command...>
-# Like vm_ssh but forces a pseudo-tty (ssh -tt). Needed for install.sh, whose
-# `sudo -S -v` warm-up fails without a tty under some shells even when the
-# user has NOPASSWD configured. Root cause is unverified — see PLAN.md
-# "Open question #1". The workaround is deliberate.
-vm_ssh_tty() {
-  local ip="$1"; shift
-  if [[ -n "$SSH_KEY" ]]; then
-    ssh -tt -i "$SSH_KEY" -o IdentitiesOnly=yes "${SSH_OPTS[@]}" "$VM_USER@$ip" "$@"
-  else
-    require_sshpass
-    sshpass -p "$VM_PASS" ssh -tt "${SSH_OPTS[@]}" "$VM_USER@$ip" "$@"
-  fi
-}
-
 # vm_scp_to <src> <ip> <dst>
 vm_scp_to() {
   local src="$1" ip="$2" dst="$3"
@@ -174,26 +159,21 @@ vm_reboot() {
   vm_wait_ssh "$name" 300
 }
 
-# terminal_mode
-# True when the playbook runs the installer through a terminal, typing the
-# account's password at sudo's prompt (nix-test-vm playbook <name> --terminal).
-terminal_mode() {
-  [[ "${INSTALL_MODE:-}" == "terminal" ]]
-}
-
 # drive_installer <ip> [expected-exit]
 # Runs ~/install.sh in a terminal inside the guest via test/lib/drive-installer.exp,
 # which answers only what it has matched and checks the sudo counts. Appends
-# the invocation's counts to $TERMINAL_RUN_DIR/results and its screen output to
+# the invocation's counts to $TERMINAL_RUN_DIR/results, its sudo commands to
+# $TERMINAL_RUN_DIR/sudo-commands and its screen output to
 # $TERMINAL_RUN_DIR/transcript.
 drive_installer() {
   local ip="$1" expected_exit="${2:-0}"
   : "${TERMINAL_RUN_DIR:?TERMINAL_RUN_DIR not set}"
-  [[ -n "$SSH_KEY" ]] || die "terminal mode needs SSH_KEY"
+  [[ -n "$SSH_KEY" ]] || die "the installer terminal needs SSH_KEY"
   command -v expect >/dev/null || die "expect not on PATH — run inside devenv shell"
   : > "$TERMINAL_RUN_DIR/transcript"
   VM_USER="$VM_USER" VM_PASS="$VM_PASS" SSH_KEY="$SSH_KEY" \
     expect -f "$(repo_root)/test/lib/drive-installer.exp" -- \
       "$ip" "$expected_exit" "$TERMINAL_RUN_DIR/transcript" "$TERMINAL_RUN_DIR/results" \
+      "$TERMINAL_RUN_DIR/sudo-commands" \
       "${SSH_OPTS[@]}"
 }

@@ -15,3 +15,4 @@ scenario install/phase2-3.sh
 scenario verify/mount.sh
 scenario verify/launchdaemon.sh
 SHELL_UNDER_TEST=bash scenario verify/nix-works.sh
+scenario verify/sudo-commands.sh exact

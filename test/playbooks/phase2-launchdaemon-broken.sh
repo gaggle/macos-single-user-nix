@@ -14,6 +14,7 @@ scenario install/phase1.sh
 IP=$(scenario install/reboot.sh)
 export IP
 scenario install/phase2-3.sh
+scenario verify/sudo-commands.sh exact
 
 # Confirm the system is healthy before we break it.
 scenario verify/mount.sh

@@ -2,7 +2,7 @@
 # Scenario: assert that running install.sh after /etc/synthetic.conf was wiped
 # redoes phase 1: it writes the 'nix' entry again, prints the reboot notice,
 # exits 0, and creates no APFS volume.
-# Requires: $IP.
+# Requires: $IP, $TERMINAL_RUN_DIR.
 set -euo pipefail
 # shellcheck source=../../lib/vm.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../../lib/vm.sh"
@@ -13,16 +13,8 @@ log "asserting: install.sh redoes phase 1 when synthetic.conf was wiped"
 vm_ssh "$IP" "test ! -e /etc/synthetic.conf || ! grep -qE '^nix([[:space:]]|\$)' /etc/synthetic.conf" \
   || die "precondition failed: /etc/synthetic.conf still declares /nix"
 
-if terminal_mode; then
-  drive_installer "$IP" 0
-  out=$(tr -d '\r' < "$TERMINAL_RUN_DIR/transcript")
-else
-  # NOPASSWD is baked into the paved VM, so plain vm_ssh is fine.
-  rc=0
-  out=$(vm_ssh "$IP" "\$HOME/install.sh < /dev/null 2>&1" 2>&1 | tr -d '\r') || rc=$?
-  (( rc == 0 )) || die "installer exited $rc, expected 0:
-$out"
-fi
+drive_installer "$IP" 0
+out=$(tr -d '\r' < "$TERMINAL_RUN_DIR/transcript")
 
 echo "$out" | grep -q "declaring /nix in /etc/synthetic.conf" \
   || die "installer did not redo phase 1:
