@@ -190,9 +190,9 @@ wait_for_confirmation() {
 
 write_synthetic_conf() {
   if [[ -f /etc/synthetic.conf ]]; then
-    echo "nix" | sudo_write "append 'nix' to existing /etc/synthetic.conf" /etc/synthetic.conf '>>'
+    sudo_write "append 'nix' to existing /etc/synthetic.conf" /etc/synthetic.conf '>>' <<< "nix"
   else
-    echo "nix" | sudo_write "create /etc/synthetic.conf with 'nix' entry" /etc/synthetic.conf '>'
+    sudo_write "create /etc/synthetic.conf with 'nix' entry" /etc/synthetic.conf '>' <<< "nix"
   fi
   sudo_run "ensure /etc/synthetic.conf is world-readable" chmod 644 /etc/synthetic.conf
 }
@@ -271,8 +271,10 @@ write_fstab_entry() {
     log "  $G_SKIP /etc/fstab already has a Nix Store entry — skipping"
     return
   fi
-  printf '%s\n' "UUID=$uuid /nix apfs rw,noauto,nobrowse,nosuid,noatime,owners" \
-    | sudo_write "record Nix Store in /etc/fstab (noauto: LaunchDaemon will mount it)" /etc/fstab '>>'
+  # Content comes by here-string, not a pipe: the last stage of a pipeline runs
+  # in a subshell, which would lose the SUDO_USES increment.
+  sudo_write "record Nix Store in /etc/fstab (noauto: LaunchDaemon will mount it)" /etc/fstab '>>' \
+    <<< "UUID=$uuid /nix apfs rw,noauto,nobrowse,nosuid,noatime,owners"
 }
 
 # Where the named mount helper lives. It CANNOT live in the user's home or in
