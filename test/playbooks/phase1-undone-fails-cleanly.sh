@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Playbook (negative): phase 1 ran, user rebooted, /nix appeared — but then
-# someone wiped /etc/synthetic.conf. After the *next* reboot /nix vanishes,
-# and install.sh must once again refuse phase 2 with a clear error.
+# Playbook (negative): phase 1 ran, the user rebooted and /nix appeared, then
+# someone wiped /etc/synthetic.conf. Re-running install.sh must treat phase 1
+# as not done: write the entry again, print the reboot notice, exit 0, and
+# create no volume.
 #
-# This protects against silently re-treating a partially-reverted system as
+# This protects against silently treating a partially-reverted system as
 # resumable.
 set -euo pipefail
 
@@ -14,11 +15,5 @@ scenario install/phase1.sh
 IP=$(scenario install/reboot.sh)
 export IP
 
-# /nix exists as an empty synthetic mount point after the phase-1 reboot, but
-# it is not an APFS volume yet — phase 2 hasn't run. Undo phase 1, reboot
-# again, and /nix should not even reappear.
-
 scenario corrupt/delete-synthetic-conf.sh
-IP=$(scenario install/reboot.sh)
-export IP
-scenario verify/phase2-refused.sh
+scenario verify/phase1-redone.sh
