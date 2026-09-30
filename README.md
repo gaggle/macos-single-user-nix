@@ -115,7 +115,7 @@ root, and that's most of what this repo is reacting to. Our rules:
 - Every `sudo` invocation is **echoed at the moment it runs** and then
   waits for confirmation before proceeding. So you can audit it in your
   terminal. The commands a full install prints are listed in
-  [`test/expected-sudo-commands.txt`](test/expected-sudo-commands.txt), and the
+  [test/expected-sudo-commands.txt](test/expected-sudo-commands.txt), and the
   test suite fails if they change.
 - **Phase 3 uses no sudo at all**: that's a property of single-user mode
   (Nix is owned by your user, not root), and we surface it explicitly.
@@ -138,7 +138,7 @@ This enables for you a shell with all dependencies available.
 ### Running the tests
 
 The test harness boots a fresh macOS VM via [tart](https://tart.run), copies
-[`install.sh`](install.sh) in, runs the installer through its phases either
+[install.sh](install.sh) in, runs the installer through its phases either
 side of a real reboot, answers it at a terminal as a person would, and asserts
 the final state.
 
@@ -146,5 +146,5 @@ the final state.
 test/run-vm-test.sh
 ```
 
-See [`test/README.md`](test/README.md) for details, and [`REPORT.md`](REPORT.md)
+See [test/README.md](test/README.md) for details, and [REPORT.md](REPORT.md)
 for the latest run.
