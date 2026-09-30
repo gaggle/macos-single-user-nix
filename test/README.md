@@ -1,6 +1,6 @@
 # VM test harness
 
-End-to-end verification that [`install.sh`](../install.sh) works as advertised.
+End-to-end verification that [install.sh](../install.sh) works as advertised.
 
 We spin up a real macOS VM via [tart](https://tart.run), run `install.sh` in it
 at a terminal, and assert outcomes. It's a bit brutal, but it's a good way to
@@ -56,7 +56,7 @@ test/run-vm-test.sh              # every playbook, one after another
 ### How the installer is driven
 
 Every playbook runs `install.sh` in a terminal inside the guest (`ssh -tt`),
-driven by [`test/lib/drive-installer.exp`](lib/drive-installer.exp), an
+driven by [test/lib/drive-installer.exp](lib/drive-installer.exp), an
 [expect](https://core.tcl-lang.org/expect/) script. Each invocation starts with
 `sudo -k`, and the driver refuses to go on if sudo still works without a
 password. It answers only what it has matched, and sends nothing on a timer:
@@ -75,7 +75,7 @@ For every invocation it checks that:
 
 Every playbook also fails if the guest's `sw_vers -productVersion` does not
 start with 26, or if no pause was answered. The sudo commands the installer
-printed must match [`expected-sudo-commands.txt`](expected-sudo-commands.txt):
+printed must match [expected-sudo-commands.txt](expected-sudo-commands.txt):
 `happy-zsh`, `happy-bash` and `phase2-launchdaemon-broken` print all of them,
 and the other playbooks the list up to where they stop.
 
@@ -86,8 +86,8 @@ screen. A reboot fails after 5 minutes and a playbook after 1 hour.
 
 The suite saves each playbook's terminal output to
 `test/output/<commit>/<playbook>.txt`, under the commit checked out (the working
-tree must be clean). After a run, append a line to [`runs.jsonl`](runs.jsonl)
-and rebuild [`REPORT.md`](../REPORT.md) and the badge at the top of the README:
+tree must be clean). After a run, append a line to [runs.jsonl](runs.jsonl)
+and rebuild [REPORT.md](../REPORT.md) and the badge at the top of the README:
 
 ```sh
 test/bin/build-report
