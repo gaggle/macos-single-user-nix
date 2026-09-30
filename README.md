@@ -10,6 +10,16 @@ defaults to multi-user (`nix-daemon`). This repo exists because single-user is
 the right fit for a personal dev machine: no daemon to manage, no
 `/etc/nix/nix.conf` to share, your own user owns `/nix/store` outright.
 
+## Contents
+
+- [Installing Nix on your Mac](#installing-nix-on-your-mac)
+  - [Picking the Nix version](#picking-the-nix-version)
+  - [Shell support](#shell-support)
+- [Why single-user?](#why-single-user)
+- [A note on `sudo`](#a-note-on-sudo)
+- [Hacking on this repo](#hacking-on-this-repo)
+  - [Running the tests](#running-the-tests)
+
 ## Installing Nix on your Mac
 
 Prerequisites: macOS, sudo access (just for installation, not ongoingly), and the ability to reboot.
