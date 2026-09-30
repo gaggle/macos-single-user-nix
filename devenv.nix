@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, config, ... }:
 
 {
   # Tools for working on the installer and the VM test harness.
@@ -15,21 +15,25 @@
   ];
 
   enterShell = ''
-    echo "macos-single-user-nix devshell"
-    echo "  commands: check, lint, test-unit, test-vm"
+    echo ${lib.escapeShellArg "  commands: ${lib.concatStringsSep ", " (lib.attrNames config.scripts)}"}
   '';
 
-  # Lint the installer on every devenv invocation.
-  scripts.lint.exec = ''
-    find . -type f \( -name '*.sh' -o -path './test/bin/*' \) \
-      -not -path './.devenv/*' -not -path './.git/*' \
-      -not -path './test/unit/.bats_deps/*' \
-      -exec shellcheck -x -P SCRIPTDIR {} +
-  '';
+  scripts.lint = {
+    description = "Run shellcheck over the shell scripts";
+    exec = ''
+      find . -type f \( -name '*.sh' -o -path './test/bin/*' \) \
+        -not -path './.devenv/*' -not -path './.git/*' \
+        -not -path './test/unit/.bats_deps/*' \
+        -exec shellcheck -x -P SCRIPTDIR {} +
+    '';
+  };
 
-  scripts.test-unit.exec = ''
-    BATS_TEST_TIMEOUT=30 bats test/unit/
-  '';
+  scripts.test-unit = {
+    description = "Run the bats unit tests";
+    exec = ''
+      BATS_TEST_TIMEOUT=30 bats test/unit/
+    '';
+  };
 
   scripts.check = {
     description = "Run the unit tests and lint";
@@ -40,11 +44,10 @@
     '';
   };
 
-  scripts.test-vm.exec = ''
-    exec "$DEVENV_ROOT/test/bin/nix-test-vm" "$@"
-  '';
-
-  enterTest = ''
-    check
-  '';
+  scripts.test-vm = {
+    description = "Run the installer end to end in a tart VM";
+    exec = ''
+      exec "$DEVENV_ROOT/test/bin/nix-test-vm" "$@"
+    '';
+  };
 }
