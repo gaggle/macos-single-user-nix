@@ -1,6 +1,6 @@
 # macos-single-user-nix
 
-[![tested on no passing run](https://img.shields.io/badge/tested%20on-no%20passing%20run-lightgrey)](REPORT.md)
+[![tested on macOS 26.6.2, Nix 2.35.2](https://img.shields.io/badge/tested%20on-macOS%2026.6.2,%20Nix%202.35.2-brightgreen)](REPORT.md)
 
 A single-shell-script installer for [Nix](https://nixos.org/) in **single-user
 mode** on macOS.

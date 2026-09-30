@@ -1,0 +1,118 @@
+[vm-test] playbook: phase1-undone-fails-cleanly → nix-test-phase1-undone-fails-cleanly-47274 (clone of nix-paved-tahoe)
+[vm-test] cloning nix-paved-tahoe → nix-test-phase1-undone-fails-cleanly-47274
+[vm-test] starting VM nix-test-phase1-undone-fails-cleanly-47274 (headless)
+[vm-test] VM up at 192.168.64.109 — running playbook
+[vm-test] ── scenario: setup/remove-passwordless-sudo.sh
+[vm-test] removing every passwordless sudoers entry from this clone
+[vm-test]   → sudo now needs a password
+[vm-test] ── scenario: verify/guest-version.sh
+[vm-test] asserting: guest macOS build starts with 26
+[vm-test]   → macOS 26.6.2
+[vm-test] ── scenario: install/upload.sh
+[vm-test] uploading install.sh → admin@192.168.64.109:~/install.sh
+[vm-test] ── scenario: install/phase1.sh
+[vm-test] running install.sh (phase 1) on 192.168.64.109
+TERMINAL:yes
+macos-single-user-nix installer
+detecting latest Nix release…
+Nix version: 2.35.2  (latest from releases.nixos.org)
+
+This installer runs in 3 phases:
+  [ ] Phase 1: declare /nix  (requires sudo + reboot)
+  [ ] Phase 2: mount "Nix Store" volume via LaunchDaemon  (requires sudo)
+  [ ] Phase 3: install Nix 2.35.2 to ~/.nix-profile
+
+Every sudo is echoed and then paused, so you can confirm to continue — no hidden privileges
+
+Next, you'll be prompted for your password once  (sudo -v warm-up)
+
+Password:
+
+[→] Phase 1/3: declaring /nix in /etc/synthetic.conf
+  [sudo] create /etc/synthetic.conf with 'nix' entry
+  [sudo]   $ sudo tee > /etc/synthetic.conf
+  [sudo]   ─── content ───
+  [sudo]   │ nix  [sudo]   ─── end ───
+  [sudo] Press Enter to run, or Ctrl-C to abort...
+  [sudo] ensure /etc/synthetic.conf is world-readable
+  [sudo]   $ sudo chmod 644 /etc/synthetic.conf
+  [sudo] Press Enter to run, or Ctrl-C to abort...
+
+Phase 1 complete.
+
+  REBOOT REQUIRED.
+
+  macOS only reads /etc/synthetic.conf at boot, so /nix will not exist
+  until you reboot. After rebooting, run this script again to continue
+  with phase 2.
+
+      sudo reboot
+      # then, after login, re-run the same command you used to start —
+      # e.g. either of:
+      bash install.sh
+      curl -fsSL https://raw.githubusercontent.com/gaggle/macos-single-user-nix/main/install.sh | bash
+
+
+[driver] sudo_lines=2 pauses=2 reported=none password_prompts=1 exit=0 terminal=yes
+[vm-test] ── scenario: install/reboot.sh
+[vm-test] rebooting nix-test-phase1-undone-fails-cleanly-47274
+Password:Connection to 192.168.64.109 closed by remote host.
+[vm-test] ── scenario: corrupt/delete-synthetic-conf.sh
+[vm-test] corrupting state: removing 'nix' from /etc/synthetic.conf
+Password:Password:[vm-test] ── scenario: verify/phase1-redone.sh
+[vm-test] asserting: install.sh redoes phase 1 when synthetic.conf was wiped
+TERMINAL:yes
+macos-single-user-nix installer
+detecting latest Nix release…
+Nix version: 2.35.2  (latest from releases.nixos.org)
+
+This installer runs in 3 phases:
+  [ ] Phase 1: declare /nix  (requires sudo + reboot)
+  [ ] Phase 2: mount "Nix Store" volume via LaunchDaemon  (requires sudo)
+  [ ] Phase 3: install Nix 2.35.2 to ~/.nix-profile
+
+Every sudo is echoed and then paused, so you can confirm to continue — no hidden privileges
+
+Next, you'll be prompted for your password once  (sudo -v warm-up)
+
+Password:
+
+[→] Phase 1/3: declaring /nix in /etc/synthetic.conf
+  [sudo] create /etc/synthetic.conf with 'nix' entry
+  [sudo]   $ sudo tee > /etc/synthetic.conf
+  [sudo]   ─── content ───
+  [sudo]   │ nix  [sudo]   ─── end ───
+  [sudo] Press Enter to run, or Ctrl-C to abort...
+  [sudo] ensure /etc/synthetic.conf is world-readable
+  [sudo]   $ sudo chmod 644 /etc/synthetic.conf
+  [sudo] Press Enter to run, or Ctrl-C to abort...
+
+Phase 1 complete.
+
+  REBOOT REQUIRED.
+
+  macOS only reads /etc/synthetic.conf at boot, so /nix will not exist
+  until you reboot. After rebooting, run this script again to continue
+  with phase 2.
+
+      sudo reboot
+      # then, after login, re-run the same command you used to start —
+      # e.g. either of:
+      bash install.sh
+      curl -fsSL https://raw.githubusercontent.com/gaggle/macos-single-user-nix/main/install.sh | bash
+
+
+[driver] sudo_lines=2 pauses=2 reported=none password_prompts=1 exit=0 terminal=yes
+[vm-test]   → installer redid phase 1, printed the reboot notice, exited 0, made no volume
+[vm-test] ── scenario: verify/sudo-commands.sh
+[vm-test] asserting: the sudo commands printed match the expected list (prefix, invocations 1-1)
+[vm-test]   → 2 sudo commands match
+[vm-test] ── scenario: verify/sudo-commands.sh
+[vm-test] asserting: the sudo commands printed match the expected list (prefix, invocations 2-2)
+[vm-test]   → 2 sudo commands match
+[vm-test] ── scenario: verify/pauses-answered.sh
+[vm-test] asserting: the terminal run answered sudo pauses
+[vm-test]   invocation: sudo_lines=2 pauses=2 reported=none password_prompts=1 exit=0 terminal=yes
+[vm-test]   invocation: sudo_lines=2 pauses=2 reported=none password_prompts=1 exit=0 terminal=yes
+[vm-test]   → 4 pauses answered
+[vm-test] PASS — playbook 'phase1-undone-fails-cleanly' completed
