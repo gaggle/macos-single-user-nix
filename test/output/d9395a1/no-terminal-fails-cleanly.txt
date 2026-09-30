@@ -1,0 +1,71 @@
+[vm-test] playbook: no-terminal-fails-cleanly → nix-test-no-terminal-fails-cleanly-94478 (clone of nix-paved-tahoe)
+[vm-test] cloning nix-paved-tahoe → nix-test-no-terminal-fails-cleanly-94478
+[vm-test] starting VM nix-test-no-terminal-fails-cleanly-94478 (headless)
+[vm-test] VM up at 192.168.64.113 — running playbook
+[vm-test] ── scenario: setup/remove-passwordless-sudo.sh
+[vm-test] removing every passwordless sudoers entry from this clone
+[vm-test]   → sudo now needs a password
+[vm-test] ── scenario: verify/guest-version.sh
+[vm-test] asserting: guest macOS build starts with 26
+[vm-test]   → macOS 26.6.2
+[vm-test] ── scenario: install/upload.sh
+[vm-test] uploading install.sh → admin@192.168.64.113:~/install.sh
+[vm-test] ── scenario: verify/no-terminal-refused.sh
+[vm-test] asserting: install.sh refuses to run without a terminal
+[vm-test] ERROR: install.sh needs a terminal.
+       It pauses before every sudo command and waits for Enter, and there is
+       no terminal to read it from. Run it from a terminal window:
+       curl -fsSL https://raw.githubusercontent.com/gaggle/macos-single-user-nix/main/install.sh | bash
+[vm-test]   → installer refused before any sudo command and changed nothing
+[vm-test] ── scenario: install/phase1.sh
+[vm-test] running install.sh (phase 1) on 192.168.64.113
+TERMINAL:yes
+macos-single-user-nix installer
+detecting latest Nix release…
+Nix version: 2.35.2  (latest from releases.nixos.org)
+
+This installer runs in 3 phases:
+  [ ] Phase 1: declare /nix  (requires sudo + reboot)
+  [ ] Phase 2: mount "Nix Store" volume via LaunchDaemon  (requires sudo)
+  [ ] Phase 3: install Nix 2.35.2 to ~/.nix-profile
+
+Every sudo is echoed and then paused, so you can confirm to continue — no hidden privileges
+
+Next, you'll be prompted for your password once  (sudo -v warm-up)
+
+Password:
+
+[→] Phase 1/3: declaring /nix in /etc/synthetic.conf
+  [sudo] create /etc/synthetic.conf with 'nix' entry
+  [sudo]   $ sudo tee > /etc/synthetic.conf
+  [sudo]   ─── content ───
+  [sudo]   │ nix  [sudo]   ─── end ───
+  [sudo] Press Enter to run, or Ctrl-C to abort...
+  [sudo] ensure /etc/synthetic.conf is world-readable
+  [sudo]   $ sudo chmod 644 /etc/synthetic.conf
+  [sudo] Press Enter to run, or Ctrl-C to abort...
+
+Phase 1 complete.
+
+  REBOOT REQUIRED.
+
+  macOS only reads /etc/synthetic.conf at boot, so /nix will not exist
+  until you reboot. After rebooting, run this script again to continue
+  with phase 2.
+
+      sudo reboot
+      # then, after login, re-run the same command you used to start —
+      # e.g. either of:
+      bash install.sh
+      curl -fsSL https://raw.githubusercontent.com/gaggle/macos-single-user-nix/main/install.sh | bash
+
+
+[driver] sudo_lines=2 pauses=2 reported=none password_prompts=1 exit=0 terminal=yes
+[vm-test] ── scenario: verify/sudo-commands.sh
+[vm-test] asserting: the sudo commands printed match the expected list (prefix, invocations 1-999999)
+[vm-test]   → 2 sudo commands match
+[vm-test] ── scenario: verify/pauses-answered.sh
+[vm-test] asserting: the terminal run answered sudo pauses
+[vm-test]   invocation: sudo_lines=2 pauses=2 reported=none password_prompts=1 exit=0 terminal=yes
+[vm-test]   → 2 pauses answered
+[vm-test] PASS — playbook 'no-terminal-fails-cleanly' completed
