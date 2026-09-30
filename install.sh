@@ -42,39 +42,27 @@ die()  { echo "ERROR: $*" >&2; exit 1; }
 # The user can audit every privileged action in their terminal scrollback —
 # no hidden chains, no opaque mutations.
 
-# Whether the installer was started from a terminal, decided once here. It
-# cannot be asked later: sudo_write reads its content from a pipe, so stdin is
-# no longer the terminal by the time it pauses. BATS tests override it.
-if [[ -z "${_SUN_INTERACTIVE:-}" ]]; then
-  if [[ -t 0 ]]; then _SUN_INTERACTIVE=1; else _SUN_INTERACTIVE=0; fi
-fi
-
-# Test seam: where the pause reads Enter from.
+# Test seam: the terminal the pauses read Enter from.
 : "${_SUN_TTY=/dev/tty}"
+
+# The installer only runs with a person at a terminal. That is /dev/tty, not
+# stdin: under `curl ... | bash`, stdin is the script itself.
+require_terminal() {
+  { true < "$_SUN_TTY"; } 2>/dev/null || die "install.sh needs a terminal.
+       It pauses before every sudo command and waits for Enter, and there is
+       no terminal to read it from. Run it from a terminal window:
+       curl -fsSL https://raw.githubusercontent.com/gaggle/macos-single-user-nix/main/install.sh | bash"
+}
 
 sudo_confirm() {
   # Pause so the user can read the upcoming sudo call and abort if unexpected.
-  # Skipped in non-interactive contexts (piped input, CI, SSH without -t).
-  [[ "$_SUN_INTERACTIVE" == 1 ]] || return 0
   printf '%s' "  [sudo] Press Enter to run, or Ctrl-C to abort..." >&2
   read -r -s < "$_SUN_TTY"
   echo ""
 }
 
-# Predicates split out so BATS tests can override them.
-_sudo_passwordless()    { $_SUN_SUDO -n true 2>/dev/null; }
-_have_controlling_tty() { true </dev/tty 2>/dev/null; }
-
-# Ensure sudo will work for the rest of the run, or fail loudly now.
-#   1. NOPASSWD already covers us (test VMs, CI) → done, no prompt needed.
-#   2. We have /dev/tty → sudo can prompt. Warm the credential cache.
-#   3. Neither → fail. sudo would otherwise hang or fail cryptically halfway
-#      through. This is the curl|bash-under-nohup / ssh-without-pty case.
+# Ask for the password once, up front, so it is not asked mid-phase.
 sudo_warmup() {
-  _sudo_passwordless && return 0
-  _have_controlling_tty || die "sudo needs a password but there is no controlling terminal.
-       Re-run from an interactive shell, or configure passwordless sudo
-       for this user (NOPASSWD in /etc/sudoers.d/)."
   $_SUN_SUDO -v
 }
 
@@ -175,15 +163,6 @@ print_sudo_prompt() {
   echo "Every sudo is echoed and then paused, so you can confirm to continue — no hidden privileges"
   echo ""
   echo "Next, you'll be prompted for your password once  (sudo -v warm-up)"
-}
-
-# Pause for the user to read what's about to happen.
-# Skipped automatically in non-interactive contexts (piped input, CI, SSH
-# without -t) — stdin not being a TTY is the signal.
-wait_for_confirmation() {
-  [[ -t 0 ]] || return 0
-  read -r -s -p "Press Enter to continue, or Ctrl-C to abort..." < /dev/tty
-  echo ""
 }
 
 # ─── Phase 1 ─────────────────────────────────────────────────────────────────
@@ -570,6 +549,7 @@ print_summary() {
 # ─── main ────────────────────────────────────────────────────────────────────
 
 main() {
+  require_terminal
   preflight
   echo "macos-single-user-nix installer"
   resolve_nix_version

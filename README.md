@@ -133,6 +133,8 @@ root, and that's most of what this repo is reacting to. Our rules:
   terminal. The commands a full install prints are listed in
   [test/expected-sudo-commands.txt](test/expected-sudo-commands.txt), and the
   test suite fails if they change.
+- The installer **only runs at a terminal**, including when piped into
+  `bash`. With no terminal to pause at, it stops before its first `sudo`.
 - **Phase 3 uses no sudo at all**: that's a property of single-user mode
   (Nix is owned by your user, not root), and we surface it explicitly.
 
@@ -154,7 +156,7 @@ This enables for you a shell with all dependencies available.
 ### Running the tests
 
 The test harness boots a fresh macOS VM via [tart](https://tart.run), copies
-[install.sh](install.sh) in, runs the installer through its phases either
+[install.sh](install.sh) in, pipes it into `bash` through its phases either
 side of a real reboot, answers it at a terminal as a person would, and asserts
 the final state.
 

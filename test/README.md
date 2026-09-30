@@ -46,6 +46,7 @@ test/bin/nix-test-vm pave        # ~5 min: boot, install key + sudoers, stop
 | `happy-bash` | Happy-path install with bash as the login shell. |
 | `phase1-no-reboot-fails-cleanly` | Phase 1 wrote `synthetic.conf` but the user skipped the reboot. Running the installer again must refuse phase 2 with a clear error. |
 | `phase1-undone-fails-cleanly` | Phase 1 ran and `/nix` appeared, then `/etc/synthetic.conf` was wiped. Running the installer again must redo phase 1, print the reboot notice, exit 0, and create no volume. |
+| `no-terminal-fails-cleanly` | The installer is piped into bash over ssh with no terminal. It must refuse before any sudo command and change nothing; the same machine then runs phase 1 at a terminal. |
 | `phase2-launchdaemon-broken` | After a clean install, the LaunchDaemon is removed and `/nix` unmounted, then the VM reboots. `/nix` must stay unmounted and `nix --version` must fail. |
 
 ```sh
@@ -55,8 +56,9 @@ test/run-vm-test.sh              # every playbook, one after another
 
 ### How the installer is driven
 
-Every playbook runs `install.sh` in a terminal inside the guest (`ssh -tt`),
-driven by [test/lib/drive-installer.exp](lib/drive-installer.exp), an
+Every playbook runs `install.sh` the way the README's install command does,
+piped into bash (`cat ~/install.sh | bash`), in a terminal inside the guest
+(`ssh -tt`), driven by [test/lib/drive-installer.exp](lib/drive-installer.exp), an
 [expect](https://core.tcl-lang.org/expect/) script. Each invocation starts with
 `sudo -k`, and the driver refuses to go on if sudo still works without a
 password. It answers only what it has matched, and sends nothing on a timer:
@@ -77,7 +79,9 @@ Every playbook also fails if the guest's `sw_vers -productVersion` does not
 start with 26, or if no pause was answered. The sudo commands the installer
 printed must match [expected-sudo-commands.txt](expected-sudo-commands.txt):
 `happy-zsh`, `happy-bash` and `phase2-launchdaemon-broken` print all of them,
-and the other playbooks the list up to where they stop.
+and the other playbooks the list up to where they stop. The one run with no
+terminal, in `no-terminal-fails-cleanly`, goes around the driver and must print
+no sudo command at all.
 
 The driver waits at most 60 seconds for each prompt and fails with the last
 screen. A reboot fails after 5 minutes and a playbook after 1 hour.

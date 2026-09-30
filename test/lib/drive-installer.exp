@@ -1,7 +1,8 @@
 #!/usr/bin/env expect
 # Drives one invocation of install.sh through a real terminal in the guest
-# (ssh -tt), the way a person meets it: the account's password is typed at
-# sudo's own prompt, and Enter is pressed at every sudo pause.
+# (ssh -tt), the way a person meets it: the script is piped into bash, as the
+# README's curl command does, the account's password is typed at sudo's own
+# prompt, and Enter is pressed at every sudo pause.
 #
 # Nothing is sent on a timer. Enter is sent only when a
 # "[sudo]   $ sudo ..." line has been printed and the pause text then appears
@@ -51,7 +52,8 @@ set sudo_cmds {}
 
 # The remote command runs in the terminal ssh allocates. `sudo -k` drops any
 # timestamp; the driver refuses to start if sudo still works without a password.
-set remote {sudo -k; if sudo -n true 2>/dev/null; then echo TIMESTAMP:valid; exit 97; fi; if [ -t 0 ]; then echo TERMINAL:yes; else echo TERMINAL:no; fi; ~/install.sh}
+# Piped into bash, the installer's stdin is the script, not the terminal.
+set remote {sudo -k; if sudo -n true 2>/dev/null; then echo TIMESTAMP:valid; exit 97; fi; if [ -t 0 ]; then echo TERMINAL:yes; else echo TERMINAL:no; fi; cat ~/install.sh | bash}
 
 proc screen {} {
   global transcript

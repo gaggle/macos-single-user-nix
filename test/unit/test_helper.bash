@@ -16,10 +16,10 @@ load_libs() {
 }
 
 source_install_sh() {
-  # Otherwise install.sh reads the terminal the tests run from, and every
-  # sudo call waits for an Enter nobody presses. sudo_confirm.bats sets it
-  # per test.
-  _SUN_INTERACTIVE=0
+  # Every sudo pause reads its Enter from this file, not from the terminal the
+  # tests run in, where it would wait for an Enter nobody presses.
+  _SUN_TTY="${BATS_TEST_TMPDIR}/enter"
+  printf '\n' > "$_SUN_TTY"
   # shellcheck source=/dev/null
   source "${REPO_ROOT}/install.sh"
 }

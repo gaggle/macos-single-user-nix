@@ -160,7 +160,7 @@ vm_reboot() {
 }
 
 # drive_installer <ip> [expected-exit] [expected-passwords]
-# Runs ~/install.sh in a terminal inside the guest via test/lib/drive-installer.exp,
+# Pipes ~/install.sh into bash in a terminal inside the guest via test/lib/drive-installer.exp,
 # which answers only what it has matched and checks the sudo counts. Appends
 # the invocation's counts to $TERMINAL_RUN_DIR/results, its sudo commands to
 # $TERMINAL_RUN_DIR/sudo-commands and its screen output to
