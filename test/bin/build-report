@@ -76,7 +76,7 @@ rows=$(
   done <<< "$rows"
   echo
   echo "To reproduce a run, see [test/README.md](test/README.md)."
-  echo "[\`test/runs.jsonl\`](test/runs.jsonl) is the source of the table; \`test/bin/build-report\` builds this page."
+  echo "[test/runs.jsonl](test/runs.jsonl) is the source of the table; \`test/bin/build-report\` builds this page."
   echo
   echo "## Terminal output"
   while IFS= read -r line; do

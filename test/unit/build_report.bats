@@ -89,3 +89,10 @@ build() { "${REPO_ROOT}/test/bin/build-report"; }
   run grep -c 'no passing run' "$README_FILE"
   assert_success
 }
+
+@test "link text on the page has no backticks" {
+  run_line 2026-09-29 bbbbbbb2222 26.6.2 2.35.2 pass '{"happy-zsh":"pass"}'
+  build
+  run grep -F '[`' "$REPORT_FILE"
+  assert_failure 1   # grep found no match; 2 would mean grep itself errored
+}

@@ -11,7 +11,7 @@ One row per macOS and Nix combination, showing its newest run, whether it passed
 | ✅ pass | 26.6.2 | 2.35.2 | `4ffaa17` | 2026-09-30 |
 
 To reproduce a run, see [test/README.md](test/README.md).
-[`test/runs.jsonl`](test/runs.jsonl) is the source of the table; `test/bin/build-report` builds this page.
+[test/runs.jsonl](test/runs.jsonl) is the source of the table; `test/bin/build-report` builds this page.
 
 ## Terminal output
 
